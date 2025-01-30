@@ -56,6 +56,16 @@ Our code is inspired by [pytorch-DCGAN](https://github.com/pytorch/examples/tree
 
 *Bold indicates best performance, red indicates second best. Standard deviations shown for AdalossCycleGAN pixel-level results.*
 
+### Qualitative Results
+<div style="background-color: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+  <figure style="text-align: center;">
+    <img src="papermodels.png" alt="Anomaly Localization Comparison" style="max-width: 80%; height: auto; display: block; margin: 0 auto;">
+    <figcaption style="margin-top: 15px; font-style: italic; color: black;">
+      Qualitative comparison of anomaly localization on MVTec-AD (Bergmann et al., 2019) and CBTD datasets. From top to bottom: Reference normal sample, ground-truth mask, SimpleNet prediction, AdalossCycleGAN prediction.
+    </figcaption>
+  </figure>
+</div>
+
 ## References
 1. Zhu et al. (2017) CycleGAN [[Paper]](https://arxiv.org/abs/1703.10593)
 2. Liu et al. (2023) SimpleNet [[Paper]](https://arxiv.org/abs/2301.04632)
