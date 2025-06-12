@@ -1,6 +1,9 @@
 # AdalossCycleGAN: Adaptive Loss CycleGAN for Industrial Anomaly Detection
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Discussion Link (CVPR-2025 Only)
+https://www.kialo-edu.com/p/4c56a7b0-0abb-4900-a616-79385b6bfb2b/493759
+
 ## Abstract
 Contemporary image-based industrial anomaly detection (IAD) techniques often struggle to identify anomalies within real-world images with complex textural patterns. State-of-the-art IAD methods such as SimpleNet are seldom validated using complex pattern datasets, with performance dropping significantly for industrial images exhibiting low mean entropy and high Gabor feature standard deviation. While CycleGAN demonstrates domain transfer potential, it lacks the sensitivity required for IAD. We introduce AdalossCycleGAN, which adaptively modifies CycleGAN's loss function to improve anomaly sensitivity while maintaining domain transfer capabilities. Experimental results show AdalossCycleGAN achieves 92.9% anomaly localization accuracy on our CBT dataset (surpassing SimpleNet's 89%), and consistently outperforms competitors on 30%+ of images across all benchmarks.
 
