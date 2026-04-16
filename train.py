@@ -2,14 +2,16 @@
 
 This script works for various models (with option '--model': e.g., pix2pix, cyclegan, colorization) and
 different datasets (with option '--dataset_mode': e.g., aligned, unaligned, single, colorization).
-You need to specify the dataset ('--dataroot'), experiment name ('--name'), and model ('--model').
+You should set experiment name ('--name') and model ('--model'). The dataset path ('--dataroot') defaults to ./MCBT for this repository.
 
 It first creates model, dataset, and visualizer given the option.
 It then does standard network training. During the training, it also visualize/save the images, print/save the loss plot, and save models.
 The script supports continue/resume training. Use '--continue_train' to resume your previous training.
 
 Example:
-    Train a CycleGAN model:
+    Train AL-CycleGAN on the MCBT dataset (default dataroot):
+        python train.py --name my_experiment --model cycle_gan
+    Train a CycleGAN model (other dataset):
         python train.py --dataroot ./datasets/maps --name maps_cyclegan --model cycle_gan
     Train a pix2pix model:
         python train.py --dataroot ./datasets/facades --name facades_pix2pix --model pix2pix --direction BtoA

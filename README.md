@@ -1,78 +1,118 @@
-# AdalossCycleGAN: Adaptive Loss CycleGAN for Industrial Anomaly Detection
+# AL-CycleGAN
+
+PyTorch code for **When Textures Deceive: Weakly Supervised Industrial Anomaly Detection with Adapted-Loss** (CVPR 2025 Workshop on Visual Anomaly and Novelty Detection, VAND).
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Discussion Link (CVPR-2025 Only)
-https://www.kialo-edu.com/p/4c56a7b0-0abb-4900-a616-79385b6bfb2b/493759
+**Paper:** [OpenAccess PDF](https://openaccess.thecvf.com/content/CVPR2025W/VAND/papers/Nakkina_When_Textures_Deceive_Weakly_Supervised_Industrial_Anomaly_Detection_with_Adapted-Loss_CVPRW_2025_paper.pdf)
 
 ## Abstract
-Contemporary image-based industrial anomaly detection (IAD) techniques often struggle to identify anomalies within real-world images with complex textural patterns. State-of-the-art IAD methods such as SimpleNet are seldom validated using complex pattern datasets, with performance dropping significantly for industrial images exhibiting low mean entropy and high Gabor feature standard deviation. While CycleGAN demonstrates domain transfer potential, it lacks the sensitivity required for IAD. We introduce AdalossCycleGAN, which adaptively modifies CycleGAN's loss function to improve anomaly sensitivity while maintaining domain transfer capabilities. Experimental results show AdalossCycleGAN achieves 92.9% anomaly localization accuracy on our CBT dataset (surpassing SimpleNet's 89%), and consistently outperforms competitors on 30%+ of images across all benchmarks.
+
+Industrial anomaly detection often degrades on heavily textured surfaces. This work builds on CycleGAN-style unsupervised domain mapping and replaces the standard GAN objective with an **adapted loss**: training begins with the usual least-squares (L2) form, then switches to a higher-order power loss on discriminator outputs so the model stays useful for translation while becoming more sensitive to subtle defects. On the proposed **MCBT** benchmark, the paper reports anomaly localization improving from **89.0%** to **92.9%** with AL-CycleGAN, alongside strong I-AUROC / P-AUROC on MCBT and MVTec-AD texture categories; see the tables below and the paper for protocols and baselines.
+
+## What this repository contains
+
+- **`train.py`** — training loop with a fixed schedule (`power_switch_epoch`, default **50**) that turns on the adapted loss after warm-up.
+- **`models/networks.py`** — `GANLoss`: for LSGAN/vanilla modes, squared error when `switch` is off, and **8th-power** error \((prediction - target)^8\) when `switch` is on (see `GANLoss.__call__`).
+- **`models/cycle_gan_model.py`** — CycleGAN with discriminator outputs upsampled for visualization and optional utilities for saving alpha/beta maps and loss traces (`anomaly_detection`, `loss_analysis`, etc.).
+- **`test.py`** — standard CycleGAN testing and HTML export of results.
+
+The codebase extends [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix).
 
 ## Installation
-```bash
-# Clone repository
-git clone https://github.com/yourusername/AdalossCycleGAN.git
-cd AdalossCycleGAN
 
-# PyTorch 1.8+ required
-conda create -n adaloss python=3.8
-conda activate adaloss
-conda install pytorch=1.8 torchvision cudatoolkit=11.1 -c pytorch
+```bash
+git clone https://github.com/ganatma/AL-CycleGAN.git
+cd AL-CycleGAN
+
+# Example: conda (see also environment.yml)
+conda create -n al-cyclegan python=3.8 -y
+conda activate al-cyclegan
+conda install pytorch torchvision -c pytorch   # match CUDA for your machine
 pip install -r requirements.txt
 ```
-- To view training results and loss plots, run `python -m visdom.server` and click the URL http://localhost:8097.
-- To log training progress and test images to W&B dashboard, set the `--use_wandb` flag with train and test script
-- Train a model:
-```bash
-#!./scripts/train_cyclegan.sh
-python train.py --dataroot ./CBTD_dataset --name v1 --model cycle_gan
-```
-To see more intermediate results, check out `./checkpoints/maps_cyclegan/web/index.html`.
-- Test the model:
-```bash
-#!./scripts/test_cyclegan.sh
-python test.py --dataroot ./CBTD_dataset --name v1 --model cycle_gan
-```
-- The test results will be saved to a html file here: `./results/maps_cyclegan/latest_test/index.html`.
 
-### Apply a pre-trained model (CycleGAN)
-Checkpoints for the models and results mentioned in the paper are available in the Final Model Checkpoints folder.
-Make sure you copy the model checkpoints you want to test into the checkpoints/adalosscyclegan_exp folder
-- Then generate the results by inputting relevant dataset and experiment name arguments as shown below 
-copy 
+- **Visdom** (optional, for live curves and panels): `python -m visdom.server` then open the URL printed in the terminal (default display port in this code is **8098**; override with `--display_port`).
+- **Weights & Biases**: pass `--use_wandb` (and optionally `--wandb_project_name`) when running `train.py` / `test.py`.
+
+## MCBT dataset
+
+**Manufacturing Complex Background Texture (MCBT)** is the benchmark used in the paper. In this repository the images live in the **`MCBT/`** directory at the project root. **`--dataroot`** defaults to **`./MCBT`** in `options/base_options.py`, so you can omit it when working from this layout.
+
+- **Size:** 1,027 real-world images — **800** anomaly-free and **227** defective — with diverse defects and backgrounds.
+- **Layout:** Unaligned CycleGAN layout (`trainA`, `trainB`, `testA`, `testB`, etc.).
+
+## Data layout
+
+Use `--dataset_mode unaligned` (default) with a root folder that contains the usual CycleGAN splits, for example `trainA`, `trainB`, `testA`, `testB` (and validation folders if you use them). By default, point `--dataroot` at **`./MCBT`** or override with another path.
+
+## Training
+
 ```bash
-python test.py --dataroot ./CBTD_dataset --name adalosscyclegan_exp --model cycle_gan --epoch {if needed}
+python train.py --name my_experiment --model cycle_gan
+# equivalent to --dataroot ./MCBT
 ```
+
+```bash
+python train.py --dataroot ./MCBT --name my_experiment --model cycle_gan
+```
+
+Intermediate web results are written under `./checkpoints/<name>/web/` (unless `--no_html`). To match the paper’s **adapted-loss** schedule, keep the default behavior in `train.py` (loss switch at epoch 50) or edit `power_switch_epoch` there. The paper’s ablation on MCBT varies the switch epoch \(t^\*\); the implementation here uses a single default switch epoch (see `train.py`).
+
+Example script from the upstream project (different dataset path): `./scripts/train_cyclegan.sh`.
+
+## Testing
+
+```bash
+python test.py --name my_experiment --model cycle_gan
+# equivalent to --dataroot ./MCBT
+```
+
+Outputs go under `./results/<name>/` (see `--results_dir`). Use `--epoch <N>` or `latest` (default) to select a checkpoint from `./checkpoints/<name>/`.
+
+## Pre-trained checkpoints
+
+Place downloaded weights under `./checkpoints/<experiment_name>/` so they match the `--name` you pass to `test.py`. The repository does not ship large checkpoints; use your own or releases linked from the project when available.
+
+## Key results — MCBT (from the paper, Table 1)
+
+Image-level AUROC (I-AUROC) and pixel-level AUROC (P-AUROC) on **MCBT**. Best per column in **bold** (see the paper for highlighting rules and std. dev. for AL-CycleGAN).
+
+| Method | I-AUROC | P-AUROC |
+|--------|---------|---------|
+| EfficientAD | 0.978 | 0.892 |
+| DRAEM | 0.500 | 0.500 |
+| SimpleNet | 0.848 | 0.896 |
+| Mixed Supervision | 0.997 | 0.488 ± 0.047 |
+| GFT | — | 0.781 |
+| **AL-CycleGAN (ours)** | **1.000** | **0.929 ± 0.071** |
+
+CAVGA-R / CAVGA-Rw are not reported on MCBT in the paper. DRAEM’s **0.5 / 0.5** on MCBT reflects poor generalization to this texture regime compared to MVTec-AD. The paper also reports efficiency on MCBT (e.g., training time for 200 epochs, inference FPS) in Section 5.2.3.
+
+## Key results — MVTec-AD texture categories (from the paper)
+
+Pixel-level / image-level metrics (see paper for protocol). Bold = best; ± = std. dev. for AL-CycleGAN where reported.
+
+| Category | InTra | SimpleNet | GFT | AL-CycleGAN (ours) |
+|----------|-------|-----------|-----|---------------------|
+| Tile | 0.982/0.944 | 0.998/**0.970** | -/0.935 | **1.0**/0.952±0.064 |
+| Wood | 0.975/0.887 | **1.0**/**0.945** | -/0.908 | **1.0**/0.929±0.088 |
+| Grid | **1.0**/**0.988** | 0.997/**0.988** | -/0.9318 | 0.966/0.788±0.196 |
+| Leather | **1.0**/**0.995** | **1.0**/0.992 | -/0.984 | **1.0**/**0.995**±0.005 |
+| Carpet | 0.988/**0.992** | **0.997**/0.982 | -/0.932 | 0.957/0.973±0.063 |
+
+Qualitative comparisons for MVTec-AD and MCBT are in the paper (Figure 5).
 
 ## Acknowledgments
-Our code is inspired by [pytorch-DCGAN](https://github.com/pytorch/examples/tree/master/dcgan) and [pytorch-CycleGAN](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix).
 
-## Key Results
-
-### MVTec-AD Category Breakdown
-| Category   | InTra       | SimpleNet   | GFT         | AdalossCycleGAN          |
-|------------|-------------|-------------|-------------|--------------------------|
-| Tile       | 0.982/0.944 | <span style="color:red">0.998</span>/**0.970** | -/0.935     | **1.0**/<span style="color:red">0.952<sub>±0.64</sub></span> |
-| Wood       | <span style="color:red">0.975</span>/0.887 | **1.0**/**0.945** | -/0.908     | **1.0**/<span style="color:red">0.929<sub>±0.088</sub></span> |
-| Grid       | **1.0**/**0.988** | <span style="color:red">0.997</span>/**0.988** | -/<span style="color:red">0.9318</span> | 0.966/0.788<sub>±0.196</sub> |
-| Leather    | **1.0**/**0.995** | **1.0**/<span style="color:red">0.992</span> | -/0.984     | **1.0**/**0.995**<sub>±0.005</sub></span> |
-| Carpet     | <span style="color:red">0.988</span>/**0.992** | **0.997**/<span style="color:red">0.982</span> | -/0.932     | 0.957/0.973<sub>±0.063</sub> |
-
-*Bold indicates best performance, red indicates second best. Standard deviations shown for AdalossCycleGAN pixel-level results.*
-
-### Qualitative Results
-<div style="background-color: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
-  <figure style="text-align: center;">
-    <img src="papermodels.png" alt="Anomaly Localization Comparison" style="max-width: 80%; height: auto; display: block; margin: 0 auto;">
-    <figcaption style="margin-top: 15px; font-style: italic; color: black;">
-      Qualitative comparison of anomaly localization on MVTec-AD (Bergmann et al., 2019) and CBTD datasets. From top to bottom: Reference normal sample, ground-truth mask, SimpleNet prediction, AdalossCycleGAN prediction.
-    </figcaption>
-  </figure>
-</div>
+Code builds on [pytorch-CycleGAN-and-pix2pix](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix) and related PyTorch examples.
 
 ## References
-1. Zhu et al. (2017) CycleGAN [[Paper]](https://arxiv.org/abs/1703.10593)
-2. Liu et al. (2023) SimpleNet [[Paper]](https://arxiv.org/abs/2301.04632)
+
+1. Nakkina et al., *When Textures Deceive: Weakly Supervised Industrial Anomaly Detection with Adapted-Loss*, CVPR 2025 W (VAND). [PDF](https://openaccess.thecvf.com/content/CVPR2025W/VAND/papers/Nakkina_When_Textures_Deceive_Weakly_Supervised_Industrial_Anomaly_Detection_with_Adapted-Loss_CVPRW_2025_paper.pdf)
+2. Zhu et al., Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks (CycleGAN). [arXiv:1703.10593](https://arxiv.org/abs/1703.10593)
+3. Liu et al., SimpleNet. [arXiv:2301.04632](https://arxiv.org/abs/2301.04632)
 
 ## License
-MIT Licensed. See [LICENSE](LICENSE) for details.
 
+MIT. See [LICENSE](LICENSE).

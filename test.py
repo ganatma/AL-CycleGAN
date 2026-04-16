@@ -7,7 +7,9 @@ It first creates model and dataset given the option. It will hard-code some para
 It then runs inference for '--num_test' images and save results to an HTML file.
 
 Example (You need to train models first or download pre-trained models from our website):
-    Test a CycleGAN model (both sides):
+    Test AL-CycleGAN on MCBT (default dataroot ./MCBT):
+        python test.py --name my_experiment --model cycle_gan
+    Test a CycleGAN model (both sides, other dataset):
         python test.py --dataroot ./datasets/maps --name maps_cyclegan --model cycle_gan
 
     Test a CycleGAN model (one side only):
