@@ -32,6 +32,13 @@ conda install pytorch torchvision -c pytorch   # match CUDA for your machine
 pip install -r requirements.txt
 ```
 
+Alternatively, create the conda environment from the pinned file (name **`al-cyclegan`**, matches `environment.yml`):
+
+```bash
+conda env create -f environment.yml
+conda activate al-cyclegan
+```
+
 - **Visdom** (optional, for live curves and panels): `python -m visdom.server` then open the URL printed in the terminal (default display port in this code is **8098**; override with `--display_port`).
 - **Weights & Biases**: pass `--use_wandb` (and optionally `--wandb_project_name`) when running `train.py` / `test.py`.
 
@@ -57,9 +64,15 @@ python train.py --name my_experiment --model cycle_gan
 python train.py --dataroot ./MCBT --name my_experiment --model cycle_gan
 ```
 
-Intermediate web results are written under `./checkpoints/<name>/web/` (unless `--no_html`). To match the paper’s **adapted-loss** schedule, keep the default behavior in `train.py` (loss switch at epoch 50) or edit `power_switch_epoch` there. The paper’s ablation on MCBT varies the switch epoch \(t^\*\); the implementation here uses a single default switch epoch (see `train.py`).
+Intermediate web results are written under `./checkpoints/<name>/web/` (unless `--no_html`). The **power switch** (L2 GAN loss → 8th-power loss) is controlled by `power_switch_epoch` in `train.py` (default **50**). The paper’s Table 3 ablation on MCBT reports the highest P-AUROC when the switch occurs at epoch **175** (\(t^\*\) in the paper)—change `power_switch_epoch` in `train.py` if you want to reproduce that setting; the default **50** is a fixed schedule used in this codebase.
 
-Example script from the upstream project (different dataset path): `./scripts/train_cyclegan.sh`.
+Convenience scripts (default experiment name **`mcbt_cyclegan`**; edit the script to change `--name` or other flags):
+
+```bash
+bash ./scripts/train_mcbt.sh
+```
+
+Example script from the upstream CycleGAN repo (uses `./datasets/maps`): `./scripts/train_cyclegan.sh`.
 
 ## Testing
 
@@ -69,6 +82,12 @@ python test.py --name my_experiment --model cycle_gan
 ```
 
 Outputs go under `./results/<name>/` (see `--results_dir`). Use `--epoch <N>` or `latest` (default) to select a checkpoint from `./checkpoints/<name>/`.
+
+```bash
+bash ./scripts/test_mcbt.sh
+```
+
+Uses the same default `--name mcbt_cyclegan` as `train_mcbt.sh`; edit the script if your checkpoint folder uses a different name.
 
 ## Pre-trained checkpoints
 
